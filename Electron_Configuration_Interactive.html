@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Electron Address — Understanding Electron Configuration</title>
+<style>
+  :root{
+    --navy:#0E2433;
+    --teal:#1C7493;
+    --teal-d:#155b73;
+    --gold:#E0A009;
+    --gold-d:#b88107;
+    --sea:#E7F2F4;
+    --paper:#F7FAFB;
+    --ink:#0E2433;
+    --muted:#5b6b75;
+    --line:#cfe0e5;
+    --spinup:#E0A009;
+    --spindn:#1C7493;
+    --ok:#2e8b57;
+    --no:#c0492f;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    *{animation:none !important; transition:none !important}
+  }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:Calibri, "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size:17px;
+    line-height:1.55;
+  }
+  h1,h2,h3,.disp{font-family:Georgia, "Times New Roman", serif;}
+  .mono{font-family:"Consolas","SF Mono",ui-monospace,Menlo,monospace;}
+
+  /* ---------- top bar ---------- */
+  header.bar{
+    position:sticky; top:0; z-index:50;
+    background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:18px;
+    padding:10px 20px;
+    box-shadow:0 2px 10px rgba(14,36,51,.18);
+  }
+  header.bar .mark{
+    font-family:Georgia,serif; font-weight:bold; font-size:18px; letter-spacing:.3px;
+    white-space:nowrap;
+  }
+  header.bar .mark small{display:block; font-family:Calibri,sans-serif; font-weight:normal; font-size:11px; color:#9fc6d4; letter-spacing:.5px;}
+  nav.parts{display:flex; gap:4px; flex-wrap:wrap; margin-left:auto;}
+  nav.parts a{
+    color:#cfe0e5; text-decoration:none; font-size:13.5px;
+    padding:6px 11px; border-radius:999px; white-space:nowrap;
+  }
+  nav.parts a:hover,nav.parts a:focus{background:var(--teal); color:#fff; outline:none;}
+
+  /* ---------- hero ---------- */
+  .hero{
+    background:linear-gradient(165deg,var(--navy) 0%,#15405a 100%);
+    color:#fff; padding:64px 24px 70px; text-align:center; position:relative; overflow:hidden;
+  }
+  .hero h1{font-size:clamp(30px,5vw,52px); margin:0 0 6px; line-height:1.06;}
+  .hero .sub{color:var(--gold); font-style:italic; font-family:Georgia,serif; font-size:clamp(17px,2.4vw,22px); margin-bottom:22px;}
+  .hero p{max-width:680px; margin:0 auto; color:#d6e6ec; font-size:18px;}
+  .hero .eyebrow{letter-spacing:3px; font-size:12px; color:#7fb0c2; text-transform:uppercase; margin-bottom:16px;}
+  .keycard{
+    margin:30px auto 0; max-width:430px;
+    background:rgba(231,242,244,.06); border:1px solid rgba(224,160,9,.5);
+    border-radius:14px; padding:18px 22px; text-align:left;
+    backdrop-filter:blur(2px);
+  }
+  .keycard .kc-title{font-size:11px; letter-spacing:2px; color:var(--gold); text-transform:uppercase; margin-bottom:10px;}
+  .kc-row{display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dotted rgba(255,255,255,.16); font-size:15px;}
+  .kc-row:last-child{border-bottom:none;}
+  .kc-row span:first-child{color:#9fc6d4;}
+  .kc-row span:last-child{font-family:Georgia,serif; color:#fff;}
+
+  /* ---------- layout ---------- */
+  main{max-width:980px; margin:0 auto; padding:0 22px 80px;}
+  section.part{padding:54px 0 10px; border-top:1px solid var(--line);}
+  section.part:first-of-type{border-top:none;}
+  .eyebrow-num{display:inline-block; font-family:Georgia,serif; font-style:italic; color:var(--teal); font-size:15px; margin-bottom:4px;}
+  section.part h2{font-size:clamp(24px,3.4vw,34px); margin:0 0 6px; color:var(--navy);}
+  .lede{color:var(--muted); font-size:18px; max-width:720px; margin:0 0 26px;}
+
+  .card{background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px 24px; margin:16px 0; box-shadow:0 1px 3px rgba(14,36,51,.04);}
+  .sea{background:var(--sea); border-color:#c6dde2;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid4{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  @media (max-width:740px){ .grid2,.grid4{grid-template-columns:1fr;} }
+
+  .qn-card h3{margin:0 0 2px; font-size:19px; color:var(--teal-d);}
+  .qn-card .sym{font-family:Georgia,serif; font-style:italic; font-size:26px; color:var(--gold-d); margin-right:6px;}
+  .qn-card .meta{font-size:13px; color:var(--muted); letter-spacing:.3px; text-transform:uppercase;}
+  .qn-card .analog{margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); font-size:15px;}
+  .qn-card .analog b{color:var(--navy);}
+
+  .pill{display:inline-block; background:var(--gold); color:var(--navy); font-weight:bold; font-size:12px; letter-spacing:.5px; padding:3px 10px; border-radius:999px; text-transform:uppercase;}
+  .pill.teal{background:var(--teal); color:#fff;}
+  .pill.navy{background:var(--navy); color:#fff;}
+
+  /* ---------- buttons ---------- */
+  button{font-family:Calibri,sans-serif; cursor:pointer;}
+  .btn{
+    background:var(--teal); color:#fff; border:none; border-radius:9px;
+    padding:9px 16px; font-size:15px; font-weight:600;
+    transition:background .15s, transform .05s;
+  }
+  .btn:hover{background:var(--teal-d);}
+  .btn:active{transform:translateY(1px);}
+  .btn.gold{background:var(--gold); color:var(--navy);}
+  .btn.gold:hover{background:var(--gold-d); color:#fff;}
+  .btn.ghost{background:transparent; color:var(--teal-d); border:1.5px solid var(--teal);}
+  .btn.ghost:hover{background:var(--sea);}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  button:focus-visible,a:focus-visible,.chip:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
+
+  .chip{
+    background:#fff; border:1.5px solid var(--line); border-radius:8px;
+    padding:7px 14px; font-size:15px; color:var(--navy); transition:all .12s;
+  }
+  .chip:hover{border-color:var(--teal);}
+  .chip[aria-pressed="true"], .chip.on{background:var(--teal); color:#fff; border-color:var(--teal);}
+  .chip.disabled{opacity:.32; pointer-events:none;}
+
+  /* ---------- address builder (part 2) ---------- */
+  .builder-row{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:10px 0;}
+  .builder-row .lab{width:230px; font-size:15px;}
+  .builder-row .lab b{color:var(--teal-d);}
+  .opts{display:flex; gap:8px; flex-wrap:wrap;}
+  .verdict{margin-top:14px; padding:12px 16px; border-radius:10px; font-size:16px;}
+  .verdict.good{background:#e8f5ee; color:#1e6e44; border:1px solid #b6dcc4;}
+  .verdict.bad{background:#fbeae6; color:#a23b22; border:1px solid #eccabf;}
+
+  /* ---------- orbital shapes ---------- */
+  .shape-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  @media (max-width:740px){ .shape-grid{grid-template-columns:repeat(2,1fr);} }
+  .shape{background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; text-align:center;}
+  .shape svg{width:100%; height:110px;}
+  .shape .nm{font-family:Georgia,serif; font-size:22px; color:var(--navy); margin-top:6px;}
+  .shape .ct{font-size:13.5px; color:var(--muted);}
+
+  /* ---------- rules (part 4) ---------- */
+  .rule{display:flex; gap:18px; align-items:flex-start;}
+  @media (max-width:740px){ .rule{flex-direction:column;} }
+  .rule .vis{flex:0 0 200px;}
+  .rule .num{font-family:Georgia,serif; font-size:13px; color:var(--gold-d); letter-spacing:1px; text-transform:uppercase;}
+  .seatbox{display:inline-flex; gap:4px;}
+  .seat{width:24px; height:30px; border:2px solid var(--teal); border-radius:4px; display:flex; align-items:flex-end; justify-content:center;}
+  .seat .occ{width:8px; height:8px; border-radius:50%; background:var(--gold); margin-bottom:3px;}
+
+  /* ---------- the big builder (part 5) ---------- */
+  .stage{background:var(--navy); border-radius:16px; padding:24px; color:#fff;}
+  .stage .stage-top{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:18px;}
+  .elem-pick{display:flex; align-items:center; gap:10px;}
+  .elem-tile{
+    width:84px; height:84px; background:linear-gradient(160deg,var(--teal),#0d4a61);
+    border-radius:12px; border:2px solid var(--gold); color:#fff;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1;
+  }
+  .elem-tile .z{font-size:12px; color:#cfe6ee; align-self:flex-start; margin:6px 0 0 8px;}
+  .elem-tile .sy{font-family:Georgia,serif; font-size:34px; margin:-4px 0 2px;}
+  .elem-tile .nm{font-size:11px; color:#d6e6ec;}
+  .step-btns{display:flex; gap:8px; flex-wrap:wrap; margin-left:auto;}
+
+  .config-out{background:rgba(231,242,244,.07); border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:14px 16px; margin:14px 0; min-height:54px;}
+  .config-out .lbl{font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#7fb0c2; margin-bottom:6px;}
+  .config-notation{font-family:Georgia,serif; font-size:clamp(20px,3vw,30px); letter-spacing:1px;}
+  .config-notation sup{font-size:.62em;}
+  .config-notation .ns{color:var(--gold);}
+  .config-notation .recent{color:var(--gold); border-bottom:2px solid var(--gold);}
+
+  .boxes-wrap{display:flex; gap:22px; flex-wrap:wrap; align-items:flex-end; margin-top:6px;}
+  .subshell-group{text-align:center;}
+  .orbit-row{display:flex; gap:6px; justify-content:center;}
+  .orbital{
+    width:34px; height:40px; border:2px solid #6fa6b8; border-radius:5px;
+    display:flex; align-items:center; justify-content:center; gap:1px; position:relative; background:rgba(255,255,255,.03);
+  }
+  .orbital.pulse{animation:pulse .5s ease;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(224,160,9,.7)}100%{box-shadow:0 0 0 12px rgba(224,160,9,0)}}
+  .arrow{font-size:20px; line-height:1; font-weight:bold;}
+  .arrow.up{color:var(--spinup);}
+  .arrow.dn{color:#bfe0ec;}
+  .subshell-label{font-family:Georgia,serif; font-size:16px; margin-top:7px; color:#cfe6ee;}
+
+  .live-address{background:var(--sea); color:var(--navy); border-radius:10px; padding:14px 16px; margin-top:14px;}
+  .live-address .lbl{font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--teal-d); margin-bottom:8px;}
+  .la-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+  @media (max-width:560px){ .la-grid{grid-template-columns:repeat(2,1fr);} }
+  .la-cell{background:#fff; border:1px solid var(--line); border-radius:8px; padding:8px 10px;}
+  .la-cell .k{font-size:12px; color:var(--muted);}
+  .la-cell .v{font-family:Georgia,serif; font-size:22px; color:var(--navy);}
+
+  /* ---------- self check (part 6) ---------- */
+  .quiz .q{font-family:Georgia,serif; font-size:19px; color:var(--navy); margin-bottom:10px;}
+  .answers{display:flex; flex-direction:column; gap:8px;}
+  .ans{
+    text-align:left; background:#fff; border:1.5px solid var(--line); border-radius:9px;
+    padding:11px 15px; font-size:16px; color:var(--navy); transition:all .12s;
+  }
+  .ans:hover{border-color:var(--teal);}
+  .ans.correct{background:#e8f5ee; border-color:var(--ok); color:#1e6e44;}
+  .ans.wrong{background:#fbeae6; border-color:var(--no); color:#a23b22;}
+  .feedback{margin-top:10px; font-size:15px; color:var(--muted); min-height:22px;}
+
+  footer{background:var(--navy); color:#9fc6d4; text-align:center; padding:26px 20px; font-size:13.5px;}
+  footer b{color:#fff; font-family:Georgia,serif;}
+
+  .callout{border-left:4px solid var(--gold); background:#fff8e9; padding:12px 18px; border-radius:0 10px 10px 0; margin:16px 0; font-size:16px;}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="mark">Summer Chemistry 2026<small>MARANATHA HIGH SCHOOL · CH. 4 · MR. KOLADE</small></div>
+  <nav class="parts" aria-label="Lesson parts">
+    <a href="#p1">1 · Big Idea</a>
+    <a href="#p2">2 · The Four Numbers</a>
+    <a href="#p3">3 · Shapes</a>
+    <a href="#p4">4 · The Three Rules</a>
+    <a href="#p5">5 · Build It</a>
+    <a href="#p6">6 · Check Yourself</a>
+  </nav>
+</header>
+
+<div class="hero">
+  <div class="eyebrow">Arrangement of Electrons in Atoms</div>
+  <h1>Every electron has an address.</h1>
+  <div class="sub">Electron configuration is just learning to read it.</div>
+  <p>An atom isn't a fuzzy cloud where electrons float anywhere they please. Each electron sits in a specific, predictable spot — and four numbers tell you exactly which one. Think of it like an address on an envelope.</p>
+  <div class="keycard" aria-hidden="true">
+    <div class="kc-title">Electron ID · one electron in oxygen</div>
+    <div class="kc-row"><span>Floor &nbsp;(energy level, <i>n</i>)</span><span>2</span></div>
+    <div class="kc-row"><span>Wing &nbsp;(sublevel, <i>ℓ</i>)</span><span>p</span></div>
+    <div class="kc-row"><span>Room &nbsp;(orbital, <i>m<sub>ℓ</sub></i>)</span><span>+1</span></div>
+    <div class="kc-row"><span>Bed &nbsp;(spin, <i>m<sub>s</sub></i>)</span><span>↑ &nbsp;+½</span></div>
+  </div>
+</div>
+
+<main>
+
+<!-- PART 1 -->
+<section class="part" id="p1">
+  <span class="eyebrow-num">Part one</span>
+  <h2>The big idea: electrons live somewhere specific</h2>
+  <p class="lede">Before any rules or symbols, hold onto one picture. The space around a nucleus is like a tall building, and electrons are the residents. Nobody floats in the hallway — everyone has a floor, a wing, a room, and a bed.</p>
+
+  <div class="card sea">
+    <div class="grid2">
+      <div>
+        <p style="margin-top:0"><b>Why bother with an "address" at all?</b></p>
+        <p>Because where an electron lives decides how the atom behaves — whether it bonds, what it bonds with, and why the periodic table has the shape it does. The outermost residents do almost all the chemistry.</p>
+      </div>
+      <div>
+        <p style="margin-top:0"><b>What you'll be able to do by Part 5:</b></p>
+        <p>Pick any element and write its full electron configuration — the official "list of addresses" for all its electrons — and draw the orbital (box) diagram that goes with it.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">Keep the building in mind the whole way through. Every new term we meet is just one more line of the address.</div>
+</section>
+
+<!-- PART 2 -->
+<section class="part" id="p2">
+  <span class="eyebrow-num">Part two</span>
+  <h2>The four quantum numbers</h2>
+  <p class="lede">Four numbers fully describe any one electron. No two electrons in the same atom can share all four — just like no two people share the exact same floor, wing, room, <em>and</em> bed.</p>
+
+  <div class="grid4">
+    <div class="card qn-card">
+      <h3><span class="sym">n</span></h3>
+      <div class="meta">Principal · energy level</div>
+      <p>How far out, how much energy. Whole numbers: 1, 2, 3, 4…</p>
+      <div class="analog"><b>The floor.</b> Higher floor = more energy, farther from the nucleus.</div>
+    </div>
+    <div class="card qn-card">
+      <h3><span class="sym">ℓ</span></h3>
+      <div class="meta">Angular · sublevel / shape</div>
+      <p>The orbital's shape: <b>s, p, d, f</b>. Allowed values run 0 up to <i>n</i>−1.</p>
+      <div class="analog"><b>The wing.</b> Each floor has different wings available to it.</div>
+    </div>
+    <div class="card qn-card">
+      <h3><span class="sym">m<sub>ℓ</sub></span></h3>
+      <div class="meta">Magnetic · orientation</div>
+      <p>Which way the orbital points. Values run −ℓ … 0 … +ℓ.</p>
+      <div class="analog"><b>The room.</b> A wing can hold several identical rooms facing different directions.</div>
+    </div>
+    <div class="card qn-card">
+      <h3><span class="sym">m<sub>s</sub></span></h3>
+      <div class="meta">Spin</div>
+      <p>One of two spin states: <b>+½ (↑)</b> or <b>−½ (↓)</b>.</p>
+      <div class="analog"><b>The bed.</b> Every room fits exactly two — and they must spin opposite ways.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p style="margin-top:0"><span class="pill teal">Try it</span> &nbsp;Build a valid address and watch the rules enforce themselves. Notice that your earlier choices limit your later ones — that dependency <em>is</em> the structure of the atom.</p>
+
+    <div class="builder-row">
+      <div class="lab"><b>Floor</b> — pick <i>n</i></div>
+      <div class="opts" id="optN"></div>
+    </div>
+    <div class="builder-row">
+      <div class="lab"><b>Wing</b> — pick the shape (ℓ)</div>
+      <div class="opts" id="optL"></div>
+    </div>
+    <div class="builder-row">
+      <div class="lab"><b>Room</b> — pick orientation (m<sub>ℓ</sub>)</div>
+      <div class="opts" id="optM"></div>
+    </div>
+    <div class="builder-row">
+      <div class="lab"><b>Bed</b> — pick spin (m<sub>s</sub>)</div>
+      <div class="opts" id="optS"></div>
+    </div>
+
+    <div class="verdict good" id="addrVerdict">Pick a floor to begin.</div>
+  </div>
+</section>
+
+<!-- PART 3 -->
+<section class="part" id="p3">
+  <span class="eyebrow-num">Part three</span>
+  <h2>What the "wings" actually look like</h2>
+  <p class="lede">The sublevel letter (ℓ) names a real 3-D shape — the region where that electron is most likely found. Each shape comes in a fixed number of rooms (orbitals), and each room holds two electrons.</p>
+
+  <div class="shape-grid">
+    <div class="shape">
+      <svg viewBox="0 0 100 100" aria-label="s orbital, a sphere">
+        <defs><radialGradient id="gs" cx="42%" cy="38%"><stop offset="0%" stop-color="#7fc3d8"/><stop offset="100%" stop-color="#155b73"/></radialGradient></defs>
+        <circle cx="50" cy="52" r="30" fill="url(#gs)"/>
+      </svg>
+      <div class="nm">s</div>
+      <div class="ct">1 room · holds 2 e⁻</div>
+    </div>
+    <div class="shape">
+      <svg viewBox="0 0 100 100" aria-label="p orbital, a dumbbell shape">
+        <g fill="#1C7493">
+          <ellipse cx="50" cy="30" rx="13" ry="20"/>
+          <ellipse cx="50" cy="74" rx="13" ry="20"/>
+        </g>
+        <circle cx="50" cy="52" r="3" fill="#E0A009"/>
+      </svg>
+      <div class="nm">p</div>
+      <div class="ct">3 rooms · holds 6 e⁻</div>
+    </div>
+    <div class="shape">
+      <svg viewBox="0 0 100 100" aria-label="d orbital, a cloverleaf shape">
+        <g fill="#1C7493">
+          <ellipse cx="34" cy="36" rx="15" ry="9" transform="rotate(-45 34 36)"/>
+          <ellipse cx="66" cy="36" rx="15" ry="9" transform="rotate(45 66 36)"/>
+          <ellipse cx="34" cy="68" rx="15" ry="9" transform="rotate(45 34 68)"/>
+          <ellipse cx="66" cy="68" rx="15" ry="9" transform="rotate(-45 66 68)"/>
+        </g>
+        <circle cx="50" cy="52" r="3" fill="#E0A009"/>
+      </svg>
+      <div class="nm">d</div>
+      <div class="ct">5 rooms · holds 10 e⁻</div>
+    </div>
+    <div class="shape">
+      <svg viewBox="0 0 100 100" aria-label="f orbital, complex shape">
+        <g fill="#1C7493" opacity="0.92">
+          <ellipse cx="50" cy="28" rx="9" ry="15"/>
+          <ellipse cx="28" cy="50" rx="15" ry="9"/>
+          <ellipse cx="72" cy="50" rx="15" ry="9"/>
+          <ellipse cx="50" cy="74" rx="9" ry="15"/>
+          <ellipse cx="36" cy="36" rx="11" ry="7" transform="rotate(-45 36 36)"/>
+          <ellipse cx="64" cy="64" rx="11" ry="7" transform="rotate(-45 64 64)"/>
+        </g>
+        <circle cx="50" cy="51" r="3" fill="#E0A009"/>
+      </svg>
+      <div class="nm">f</div>
+      <div class="ct">7 rooms · holds 14 e⁻</div>
+    </div>
+  </div>
+
+  <div class="callout">The pattern is worth memorizing: rooms go <b>1, 3, 5, 7</b> — so electrons go <b>2, 6, 10, 14</b>. Every room holds two, no matter the shape.</div>
+</section>
+
+<!-- PART 4 -->
+<section class="part" id="p4">
+  <span class="eyebrow-num">Part four</span>
+  <h2>Three rules for moving residents in</h2>
+  <p class="lede">When you add electrons to an atom, you can't put them just anywhere. Three rules decide the order — and all three match how people actually fill a building.</p>
+
+  <div class="card">
+    <div class="rule">
+      <div class="vis">
+        <div class="num">Rule 1</div>
+        <svg viewBox="0 0 140 90" width="180" aria-label="lower floors fill before higher ones">
+          <rect x="20" y="60" width="100" height="22" fill="#1C7493" rx="3"/>
+          <rect x="20" y="34" width="100" height="22" fill="#9cc6d4" rx="3"/>
+          <rect x="20" y="8"  width="100" height="22" fill="#dcebef0" opacity=".5" rx="3"/>
+          <circle cx="40" cy="71" r="5" fill="#E0A009"/><circle cx="62" cy="71" r="5" fill="#E0A009"/>
+          <circle cx="40" cy="45" r="5" fill="#E0A009"/>
+          <text x="124" y="74" font-size="9" fill="#5b6b75">n=1</text>
+          <text x="124" y="48" font-size="9" fill="#5b6b75">n=2</text>
+        </svg>
+      </div>
+      <div>
+        <h3 style="margin:0 0 4px; color:var(--teal-d);">Aufbau — fill low energy first</h3>
+        <p style="margin:0">Electrons settle into the lowest available floor before any higher one. Water fills a glass from the bottom; electrons fill an atom the same way. <em>Aufbau</em> is German for "building up."</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="rule">
+      <div class="vis">
+        <div class="num">Rule 2</div>
+        <div class="seatbox" style="margin-top:10px">
+          <div class="seat"><span class="arrow up" style="font-size:22px">↑</span></div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-top:8px">one room ·<br>two beds, opposite spins</div>
+      </div>
+      <div>
+        <h3 style="margin:0 0 4px; color:var(--teal-d);">Pauli exclusion — two per room, and they must differ</h3>
+        <p style="margin:0">A room (orbital) holds at most two electrons, and they must have opposite spin (one ↑, one ↓). That's what guarantees no two electrons ever share all four address numbers.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="rule">
+      <div class="vis">
+        <div class="num">Rule 3</div>
+        <div class="orbit-row" style="justify-content:flex-start;margin-top:10px">
+          <div class="orbital" style="border-color:#1C7493"><span class="arrow up">↑</span></div>
+          <div class="orbital" style="border-color:#1C7493"><span class="arrow up">↑</span></div>
+          <div class="orbital" style="border-color:#1C7493"><span class="arrow up">↑</span></div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-top:8px">singles first, then pair up</div>
+      </div>
+      <div>
+        <h3 style="margin:0 0 4px; color:var(--teal-d);">Hund's rule — everyone gets their own room first</h3>
+        <p style="margin:0">When a wing has several identical rooms, electrons spread out one-to-a-room before any room doubles up — like strangers on a bus taking empty seats before sitting beside someone. Only once every room has one electron do they start pairing.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PART 5 -->
+<section class="part" id="p5">
+  <span class="eyebrow-num">Part five</span>
+  <h2>Build a real configuration</h2>
+  <p class="lede">Now put it together. Choose an element, then add electrons one at a time and watch all three rules play out — or fill it instantly. The notation, the box diagram, and the live address of the newest electron all stay in sync.</p>
+
+  <div class="stage">
+    <div class="stage-top">
+      <div class="elem-pick">
+        <button class="btn ghost" id="prevEl" aria-label="Previous element" style="border-color:#6fa6b8;color:#cfe6ee">◀</button>
+        <div class="elem-tile">
+          <div class="z" id="tileZ">8</div>
+          <div class="sy" id="tileSym">O</div>
+          <div class="nm" id="tileName">Oxygen</div>
+        </div>
+        <button class="btn ghost" id="nextEl" aria-label="Next element" style="border-color:#6fa6b8;color:#cfe6ee">▶</button>
+      </div>
+      <div class="step-btns">
+        <button class="btn" id="addOne">+ Add electron</button>
+        <button class="btn gold" id="fillAll">Fill instantly</button>
+        <button class="btn ghost" id="resetBuild" style="border-color:#6fa6b8;color:#cfe6ee">Reset</button>
+      </div>
+    </div>
+
+    <div style="font-size:14px;color:#9fc6d4">Electrons placed: <b id="eCount" style="color:#fff">0</b> of <b id="eTotal" style="color:#fff">8</b></div>
+
+    <div class="config-out">
+      <div class="lbl">Electron configuration</div>
+      <div class="config-notation" id="notation">—</div>
+    </div>
+
+    <div class="config-out">
+      <div class="lbl">Noble-gas shorthand</div>
+      <div class="config-notation" id="shorthand">—</div>
+    </div>
+
+    <div>
+      <div class="lbl" style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7fb0c2;margin-bottom:8px">Orbital (box) diagram</div>
+      <div class="boxes-wrap" id="boxes"></div>
+    </div>
+
+    <div class="live-address" id="liveAddr" hidden>
+      <div class="lbl">Address of the electron you just placed</div>
+      <div class="la-grid">
+        <div class="la-cell"><div class="k">Floor &nbsp;n</div><div class="v" id="laN">–</div></div>
+        <div class="la-cell"><div class="k">Wing &nbsp;ℓ</div><div class="v" id="laL">–</div></div>
+        <div class="la-cell"><div class="k">Room &nbsp;m<sub>ℓ</sub></div><div class="v" id="laM">–</div></div>
+        <div class="la-cell"><div class="k">Bed &nbsp;m<sub>s</sub></div><div class="v" id="laS">–</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">This builder runs hydrogen (1) through calcium (20) — the clean stretch where the order is exactly 1s, 2s, 2p, 3s, 3p, 4s with no surprises. Just past it, the <b>3d</b> rooms open up and a couple of elements bend the rules; that's the natural next lesson.</div>
+</section>
+
+<!-- PART 6 -->
+<section class="part" id="p6">
+  <span class="eyebrow-num">Part six</span>
+  <h2>Check yourself</h2>
+  <p class="lede">Three quick questions. Pick an answer to see whether it holds — and why.</p>
+  <div class="quiz" id="quiz"></div>
+</section>
+
+</main>
+
+<footer>
+  <b>The Electron Address</b><br>
+  Summer Chemistry 2026 · Maranatha High School · Chapter 4: Arrangement of Electrons in Atoms<br>
+  Mr. Israel A. Kolade · Room AC321
+</footer>
+
+<script>
+/* =========================================================
+   PART 2 — Address builder (rules enforce dependencies)
+   ========================================================= */
+const LETTER = {0:'s',1:'p',2:'d',3:'f'};
+const state2 = {n:null, l:null, m:null, s:null};
+
+function clearBelow(level){
+  if(level<=1){ state2.l=null; }
+  if(level<=2){ state2.m=null; }
+  if(level<=3){ /* keep spin choice independent but re-render */ }
+}
+
+function renderN(){
+  const box=document.getElementById('optN'); box.innerHTML='';
+  [1,2,3,4].forEach(n=>{
+    const b=mkChip(n, state2.n===n, ()=>{ state2.n=n; state2.l=null; state2.m=null; renderAll2(); });
+    box.appendChild(b);
+  });
+}
+function renderL(){
+  const box=document.getElementById('optL'); box.innerHTML='';
+  if(state2.n===null){ box.innerHTML='<span style="color:#8a99a1">choose a floor first</span>'; return; }
+  for(let l=0;l<=state2.n-1;l++){
+    const b=mkChip(LETTER[l]+'  (ℓ='+l+')', state2.l===l, ()=>{ state2.l=l; state2.m=null; renderAll2(); });
+    box.appendChild(b);
+  }
+}
+function renderM(){
+  const box=document.getElementById('optM'); box.innerHTML='';
+  if(state2.l===null){ box.innerHTML='<span style="color:#8a99a1">choose a wing first</span>'; return; }
+  for(let m=-state2.l;m<=state2.l;m++){
+    const b=mkChip((m>0?'+'+m:m), state2.m===m, ()=>{ state2.m=m; renderAll2(); });
+    box.appendChild(b);
+  }
+}
+function renderS(){
+  const box=document.getElementById('optS'); box.innerHTML='';
+  [['+½ ↑',0.5],['−½ ↓',-0.5]].forEach(([txt,val])=>{
+    const b=mkChip(txt, state2.s===val, ()=>{ state2.s=val; renderAll2(); });
+    box.appendChild(b);
+  });
+}
+function mkChip(label,on,fn){
+  const b=document.createElement('button');
+  b.className='chip'+(on?' on':''); b.textContent=label;
+  b.setAttribute('aria-pressed', on?'true':'false');
+  b.onclick=fn; return b;
+}
+function verdict2(){
+  const v=document.getElementById('addrVerdict');
+  if(state2.n===null){ v.className='verdict good'; v.textContent='Pick a floor to begin.'; return; }
+  if(state2.l===null){ v.className='verdict good'; v.innerHTML='Floor <b>'+state2.n+'</b> chosen. This floor offers '+state2.n+' wing'+(state2.n>1?'s':'')+': '+Array.from({length:state2.n},(_,i)=>LETTER[i]).join(', ')+'. Notice a low floor simply has fewer wings.'; return; }
+  if(state2.m===null){ v.className='verdict good'; v.innerHTML='The <b>'+state2.n+LETTER[state2.l]+'</b> wing has '+(2*state2.l+1)+' room'+(state2.l>0?'s':'')+'. Pick which one.'; return; }
+  if(state2.s===null){ v.className='verdict good'; v.innerHTML='Almost there — pick a bed (spin) to finish the address.'; return; }
+  v.className='verdict good';
+  v.innerHTML='✓ Valid address: an electron on floor <b>'+state2.n+'</b>, in the <b>'+state2.n+LETTER[state2.l]+'</b> wing, room <b>m<sub>ℓ</sub>='+(state2.m>0?'+'+state2.m:state2.m)+'</b>, bed <b>'+(state2.s>0?'+½ ↑':'−½ ↓')+'</b>. No other electron in the atom can have this exact set.';
+}
+function renderAll2(){ renderN(); renderL(); renderM(); renderS(); verdict2(); }
+renderAll2();
+
+/* =========================================================
+   PART 5 — Configuration builder (Z = 1..20)
+   ========================================================= */
+const ELEMENTS = [
+  [1,'H','Hydrogen'],[2,'He','Helium'],[3,'Li','Lithium'],[4,'Be','Beryllium'],
+  [5,'B','Boron'],[6,'C','Carbon'],[7,'N','Nitrogen'],[8,'O','Oxygen'],
+  [9,'F','Fluorine'],[10,'Ne','Neon'],[11,'Na','Sodium'],[12,'Mg','Magnesium'],
+  [13,'Al','Aluminum'],[14,'Si','Silicon'],[15,'P','Phosphorus'],[16,'S','Sulfur'],
+  [17,'Cl','Chlorine'],[18,'Ar','Argon'],[19,'K','Potassium'],[20,'Ca','Calcium']
+];
+const NOBLE = {2:'He',10:'Ne',18:'Ar'};
+
+// subshells in fill order, each with its orbital m_l list
+const SUBSHELLS = [
+  {key:'1s',n:1,l:0,letter:'s',orbs:[0]},
+  {key:'2s',n:2,l:0,letter:'s',orbs:[0]},
+  {key:'2p',n:2,l:1,letter:'p',orbs:[-1,0,1]},
+  {key:'3s',n:3,l:0,letter:'s',orbs:[0]},
+  {key:'3p',n:3,l:1,letter:'p',orbs:[-1,0,1]},
+  {key:'4s',n:4,l:0,letter:'s',orbs:[0]}
+];
+
+// full ordered list of 20 electron "slots" honoring Aufbau + Hund + Pauli
+function buildSequence(){
+  const seq=[];
+  for(const ss of SUBSHELLS){
+    for(const spin of [0.5,-0.5]){           // Hund: all singles (up) before pairs (down)
+      for(let oi=0; oi<ss.orbs.length; oi++){
+        seq.push({ss, orbIdx:oi, ml:ss.orbs[oi], spin});
+      }
+    }
+  }
+  return seq; // length 20
+}
+const SEQ = buildSequence();
+
+let elIdx = 7;       // start on Oxygen (index 7 => Z=8)
+let placed = 0;      // electrons placed for current element
+
+function curZ(){ return ELEMENTS[elIdx][0]; }
+
+const sup = {0:'⁰',1:'¹',2:'²',3:'³',4:'⁴',5:'⁵',6:'⁶',7:'⁷',8:'⁸',9:'⁹'};
+function toSup(num){ return String(num).split('').map(d=>sup[d]).join(''); }
+
+function renderTile(){
+  const [z,sy,nm]=ELEMENTS[elIdx];
+  document.getElementById('tileZ').textContent=z;
+  document.getElementById('tileSym').textContent=sy;
+  document.getElementById('tileName').textContent=nm;
+  document.getElementById('eTotal').textContent=z;
+  document.getElementById('prevEl').disabled = (elIdx===0);
+  document.getElementById('nextEl').disabled = (elIdx===ELEMENTS.length-1);
+}
+
+function notationFor(count, highlightRecent){
+  // tally electrons per subshell among first `count` of SEQ
+  const tally={};
+  for(let i=0;i<count;i++){ const k=SEQ[i].ss.key; tally[k]=(tally[k]||0)+1; }
+  const recentKey = (highlightRecent && count>0) ? SEQ[count-1].ss.key : null;
+  let html='';
+  for(const ss of SUBSHELLS){
+    if(tally[ss.key]){
+      const cls = (ss.key===recentKey) ? ' class="recent"' : '';
+      html+='<span'+cls+'>'+ss.key+'<sup>'+toSup(tally[ss.key])+'</sup></span> ';
+    }
+  }
+  return html || '—';
+}
+
+function shorthandFor(count){
+  if(count===0) return '—';
+  // find highest noble gas with Z <= count
+  let coreSym=null, coreZ=0;
+  for(const z of [18,10,2]){ if(count> z){ coreSym=NOBLE[z]; coreZ=z; break; } }
+  const tally={};
+  for(let i=coreZ;i<count;i++){ const k=SEQ[i].ss.key; tally[k]=(tally[k]||0)+1; }
+  let html = coreSym ? '<span class="ns">['+coreSym+']</span> ' : '';
+  for(const ss of SUBSHELLS){
+    if(tally[ss.key]) html+=ss.key+'<sup>'+toSup(tally[ss.key])+'</sup> ';
+  }
+  return html.trim();
+}
+
+function renderBoxes(count, pulseLast){
+  const wrap=document.getElementById('boxes'); wrap.innerHTML='';
+  // determine which subshells are touched
+  const used=[];
+  for(let i=0;i<count;i++){ if(!used.includes(SEQ[i].ss.key)) used.push(SEQ[i].ss.key); }
+  for(const key of used){
+    const ss=SUBSHELLS.find(s=>s.key===key);
+    const group=document.createElement('div'); group.className='subshell-group';
+    const row=document.createElement('div'); row.className='orbit-row';
+    // collect arrows per orbital index
+    const orbs = ss.orbs.map(()=>[]);
+    for(let i=0;i<count;i++){ if(SEQ[i].ss.key===key){ orbs[SEQ[i].orbIdx].push(SEQ[i].spin); } }
+    orbs.forEach((spins,idx)=>{
+      const o=document.createElement('div'); o.className='orbital';
+      // sort so up shown first
+      spins.sort((a,b)=>b-a).forEach(sp=>{
+        const a=document.createElement('span');
+        a.className='arrow '+(sp>0?'up':'dn');
+        a.textContent = sp>0?'↑':'↓';
+        o.appendChild(a);
+      });
+      // pulse the orbital that received the most recent electron
+      if(pulseLast && count>0 && SEQ[count-1].ss.key===key && SEQ[count-1].orbIdx===idx){
+        o.classList.add('pulse');
+      }
+      row.appendChild(o);
+    });
+    group.appendChild(row);
+    const lab=document.createElement('div'); lab.className='subshell-label'; lab.textContent=key;
+    group.appendChild(lab);
+    wrap.appendChild(group);
+  }
+}
+
+function renderAddress(count){
+  const la=document.getElementById('liveAddr');
+  if(count===0){ la.hidden=true; return; }
+  la.hidden=false;
+  const e=SEQ[count-1];
+  document.getElementById('laN').textContent=e.ss.n;
+  document.getElementById('laL').textContent=e.ss.letter+' ('+e.ss.l+')';
+  document.getElementById('laM').textContent=(e.ml>0?'+'+e.ml:e.ml);
+  document.getElementById('laS').innerHTML=(e.spin>0?'+½ ↑':'−½ ↓');
+}
+
+function renderBuild(pulse){
+  document.getElementById('eCount').textContent=placed;
+  document.getElementById('notation').innerHTML=notationFor(placed, true);
+  document.getElementById('shorthand').innerHTML=shorthandFor(placed);
+  renderBoxes(placed, pulse);
+  renderAddress(placed);
+  document.getElementById('addOne').disabled = (placed>=curZ());
+}
+
+function resetBuild(){ placed=0; renderTile(); renderBuild(false); }
+
+document.getElementById('prevEl').onclick=()=>{ if(elIdx>0){elIdx--; resetBuild();} };
+document.getElementById('nextEl').onclick=()=>{ if(elIdx<ELEMENTS.length-1){elIdx++; resetBuild();} };
+document.getElementById('addOne').onclick=()=>{ if(placed<curZ()){ placed++; renderBuild(true);} };
+document.getElementById('fillAll').onclick=()=>{ placed=curZ(); renderBuild(true); };
+document.getElementById('resetBuild').onclick=()=>{ placed=0; renderBuild(false); };
+resetBuild();
+
+/* =========================================================
+   PART 6 — Self check
+   ========================================================= */
+const QUIZ = [
+  {
+    q:"How many electrons can a single orbital (one 'room') ever hold?",
+    a:[["1","Close, but a room fits two — they just have to spin opposite ways."],
+       ["2","Right. Two electrons max per orbital, with opposite spins (Pauli)."],
+       ["6","That's a whole p sublevel (3 rooms), not one room."],
+       ["8","That's a common bonding count, but not the capacity of one orbital."]],
+    correct:1
+  },
+  {
+    q:"Which rule says electrons spread out singly across equal-energy rooms before pairing up?",
+    a:[["Aufbau","Aufbau is about filling low energy first — close, but that's a different rule."],
+       ["Pauli exclusion","Pauli sets the two-per-room, opposite-spin limit — not the spreading."],
+       ["Hund's rule","Yes. Singles first, then pairs — like taking empty bus seats first."],
+       ["The octet rule","That's about bonding to reach eight valence electrons, not orbital filling order."]],
+    correct:2
+  },
+  {
+    q:"In a neutral oxygen atom (8 electrons), what is the configuration?",
+    a:[["1s² 2s² 2p⁴","Correct — 2 + 2 + 4 = 8, and 2p fills after 2s."],
+       ["1s² 2s² 2p⁶","That's 10 electrons — that's neon, not oxygen."],
+       ["1s² 2s⁴ 2p²","The 2s wing only has one room, so it can hold at most 2."],
+       ["1s² 2p⁶","You skipped 2s — Aufbau fills 2s before 2p."]],
+    correct:0
+  }
+];
+
+function renderQuiz(){
+  const root=document.getElementById('quiz');
+  QUIZ.forEach((item,qi)=>{
+    const card=document.createElement('div'); card.className='card';
+    const q=document.createElement('div'); q.className='q'; q.textContent=(qi+1)+'. '+item.q;
+    const ans=document.createElement('div'); ans.className='answers';
+    const fb=document.createElement('div'); fb.className='feedback';
+    let answered=false;
+    item.a.forEach(([label,why],ai)=>{
+      const b=document.createElement('button'); b.className='ans'; b.textContent=label;
+      b.onclick=()=>{
+        if(answered) return;
+        answered=true;
+        if(ai===item.correct){ b.classList.add('correct'); }
+        else{
+          b.classList.add('wrong');
+          ans.children[item.correct].classList.add('correct');
+        }
+        fb.textContent=why;
+        Array.from(ans.children).forEach(x=>x.disabled=true);
+      };
+      ans.appendChild(b);
+    });
+    card.appendChild(q); card.appendChild(ans); card.appendChild(fb);
+    root.appendChild(card);
+  });
+}
+renderQuiz();
+</script>
+</body>
+</html>
